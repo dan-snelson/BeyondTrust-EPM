@@ -8,3 +8,6 @@
 
 ## [BeyondTrust EPM Inspector.zsh](BeyondTrust%20EPM%20Inspector.zsh)
 > Displays an end-user message about BeyondTrust EPM via swiftDialog, while capturing various endpoint settings behind-the-scenes
+
+## [Setup Your Mac Validation: BeyondTrust Privileged Access Management.bash](https://github.com/setup-your-mac/Setup-Your-Mac/blob/main/Validations/BeyondTrust%20Privileged%20Access%20Management.bash)
+> A script which determines the health of BeyondTrust Privilege Management for Mac

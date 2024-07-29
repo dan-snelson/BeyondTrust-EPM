@@ -3,13 +3,13 @@
 #
 # ABOUT
 #
-#	Removes admin rights from adminstrators NOT specificially listed in `approvedAdmins`
+#   Removes admin rights from adminstrators NOT specificially listed in `approvedAdmins`
 #
 ####################################################################################################
 #
 # HISTORY
 #
-#	Version 1.0.0, 08-May-2023, Dan K. Snelson (@dan-snelson)
+#   Version 1.0.0, 08-May-2023, Dan K. Snelson (@dan-snelson)
 #       Original version
 #
 #   Version 2.0.0, 20-May-2023, Dan K. Snelson (@dan-snelson)

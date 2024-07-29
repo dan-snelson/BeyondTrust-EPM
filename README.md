@@ -11,3 +11,6 @@
 
 ## [Setup Your Mac Validation: BeyondTrust Privileged Access Management.bash](https://github.com/setup-your-mac/Setup-Your-Mac/blob/main/Validations/BeyondTrust%20Privileged%20Access%20Management.bash)
 > A script which determines the health of BeyondTrust Privilege Management for Mac
+
+## [Local Administrative Rights Remove.bash](Local%20Administrative%20Rights%20Remove.bash)
+> Removes admin rights from adminstrators NOT specificially listed in `approvedAdmins`

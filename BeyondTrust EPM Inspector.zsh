@@ -19,6 +19,19 @@
 #   - Added `progressIncrementValue` variable
 #   - Included macOS version
 #
+# Version 0.0.3, 17-Jul-2024, Dan K. Snelson (@dan-snelson)
+#   - Output MDM Overrides to scriptLog
+#
+# Version 0.0.4, 17-Jul-2024, Dan K. Snelson (@dan-snelson)
+#   - Changed `debugMode` to more robust `operationMode`
+#
+# Version 0.0.5, 18-Jul-2024, Dan K. Snelson (@dan-snelson)
+#   - Added output for the BeyondTrust PMC Server URL
+#   - Output 'defendpoint.plist' to ${scriptLog} (in "verbose" Operation Mode)
+#
+# Version 0.0.6, 29-Jul-2024, Dan K. Snelson (@dan-snelson)
+#   - Updates inspired by "CrowdStrike Falcon Inspector"
+#
 ####################################################################################################
 
 
@@ -32,7 +45,7 @@
 export PATH=/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin/
 
 # Script Version
-scriptVersion="0.0.2"
+scriptVersion="0.0.6"
 
 # Client-side Log
 scriptLog="/var/log/org.churchofjesuschrist.log"
@@ -46,8 +59,8 @@ loggedInUser=$( echo "show State:/Users/ConsoleUser" | scutil | awk '/Name :/ { 
 # Jamf Pro Script Parameters
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-# Parameter 4: Debug Mode [ true (default) | false ]
-debugMode="${4:-"true"}"
+# Parameter 4: Operation Mode [ debug | normal | verbose ]
+operationMode="${4:-"verbose"}"
 
 # Parameter 5: "Anticipation" Duration (in seconds)
 anticipationDuration="${5:-"3"}"
@@ -82,15 +95,15 @@ if [[ -n $osVersionExtra ]] && [[ "${osMajorVersion}" -ge 13 ]]; then osVersion=
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# Dialog binary (and enable swiftDialog's `--verbose` mode with script's debugMode)
+# Dialog binary (and enable swiftDialog's `--verbose` mode with script's operationMode)
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 # swiftDialog Binary Path
 dialogBinary="/usr/local/bin/dialog"
 
 # Debug Mode Features
-case ${debugMode} in
-    "true" ) dialogBinary="${dialogBinary} --verbose --resizable --debug red" ;;
+case ${operationMode} in
+    "debug" ) dialogBinary="${dialogBinary} --verbose --resizable --debug red" ;;
 esac
 
 # swiftDialog Command File
@@ -105,7 +118,7 @@ progressIncrementValue="6"
 # Welcome Dialog Title, Message and Icon
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-title="BeyondTrust EPM Inspector ($scriptVersion)"
+title="${humanReadableScriptName} (${scriptVersion})"
 message="This script analyzes the installation of BeyondTrust EPM then reports the findings in this window.<br><br>Please wait …"
 icon="https://ics.services.jamfcloud.com/icon/hash_a6d0e6852d3319a200e58036039cc69bb09a0882d89e799263c951a632d3a5d2"
 # overlayIcon=$( defaults read /Library/Preferences/com.jamfsoftware.jamf.plist self_service_app_path )
@@ -172,14 +185,8 @@ function info() {
     updateScriptLog "[INFO]            ${1}"
 }
 
-function debugVerbose() {
-    if [[ "$debugMode" == "verbose" ]]; then
-        updateScriptLog "[DEBUG VERBOSE]   ${1}"
-    fi
-}
-
 function debug() {
-    if [[ "$debugMode" == "true" ]]; then
+    if [[ "$operationMode" == "debug" ]]; then
         updateScriptLog "[DEBUG]           ${1}"
     fi
 }
@@ -261,7 +268,7 @@ function dialogInstall() {
 function dialogCheck() {
 
     # Output Line Number in `verbose` Debug Mode
-    if [[ "${debugMode}" == "verbose" ]]; then preFlight "# # # SETUP YOUR MAC VERBOSE DEBUG MODE: Line No. ${LINENO} # # #" ; fi
+    if [[ "${operationMode}" == "debug" ]]; then preFlight "# # # VERBOSE DEBUG MODE: Line No. ${LINENO} # # #" ; fi
 
     # Check for Dialog and install if not found
     if [ ! -e "/Library/Application Support/Dialog/Dialog.app" ]; then
@@ -372,7 +379,7 @@ fi
 # Pre-flight Check: Logging Preamble
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-preFlight "\n\n###\n# $humanReadableScriptName (${scriptVersion})\n###\n"
+preFlight "\n\n###\n# $humanReadableScriptName (${scriptVersion})\n# Operation Mode: ${operationMode}\n###\n"
 preFlight "Initiating …"
 
 
@@ -430,21 +437,21 @@ notice "Create Welcome Dialog …"
 
 eval "$dialogWelcome" & sleep 0.3
 
-if [[ ${debugMode} == "true" ]]; then
+if [[ ${operationMode} == "debug" ]]; then
 
     updateWelcomeDialog "title: DEBUG MODE | $title"
     sleep "${anticipationDuration}"
     updateWelcomeDialog "message: DEBUG MODE. Please wait for ${anticipationDuration} seconds …"
     updateWelcomeDialog "progresstext: DEBUG MODE. Pausing for ${anticipationDuration} seconds"
     sleep "${anticipationDuration}"
-    btEpmComputerName="DEBUG"
+    computerName="DEBUG"
     btEpmClient="DEBUG"
     btEpmAdapter="DEBUG"
     btEpmPackageManager="DEBUG"
     systemExtensionStatus="DEBUG"
     policyName="DEBUG"
     policyRevision="DEBUG"
-    updateWelcomeDialog "message: **Results for ${loggedInUser}**<br><br><br>- **macOS Version:** ${osVersion} (${osBuild})<br>- **Policy Name and Revision:** ${policyName} (r${policyRevision})<br>- **Computer Name:** ${btEpmComputerName}<br>- **Installation Status:** DEBUG<br>- **Client Version:** ${btEpmClient} <br>- **Adapter Version:** ${btEpmAdapter}<br>- **Package Manager Version:** ${btEpmPackageManager}<br>- **System Extension:** ${systemExtensionStatus}"
+    updateWelcomeDialog "message: **Results for ${loggedInUser}**<br><br><br>- **macOS Version:** ${osVersion} (${osBuild})<br>- **Policy Name and Revision:** ${policyName} (r${policyRevision})<br>- **Computer Name:** ${computerName}<br>- **Installation Status:** DEBUG<br>- **Client Version:** ${btEpmClient} <br>- **Adapter Version:** ${btEpmAdapter}<br>- **Package Manager Version:** ${btEpmPackageManager}<br>- **System Extension:** ${systemExtensionStatus}"
 
 else
 
@@ -455,49 +462,49 @@ else
     SECONDS="0"
 
     # BeyondTrust EPM Inspection: Computer Name
-    notice "Computer Name"
-    btEpmComputerName=$( scutil --get LocalHostName )
+    info "Computer Name"
+    computerName=$( scutil --get LocalHostName )
     updateWelcomeDialog "progress: increment ${progressIncrementValue}"
     updateWelcomeDialog "progresstext: Computer Name …"
 
     # BeyondTrust EPM Inspection: Installation
-    notice "Installation"
+    info "Installation"
     updateWelcomeDialog "progress: increment ${progressIncrementValue}"
     updateWelcomeDialog "progresstext: Installation …"
 
     # BeyondTrust EPM Inspection: Client Version
-    notice "Client Version"
+    info "Client Version"
     btEpmClient=$( defaults read /Applications/PrivilegeManagement.app/Contents/Info.plist CFBundleVersion )
     updateWelcomeDialog "progress: increment ${progressIncrementValue}"
     updateWelcomeDialog "progresstext: Client Version …"
 
     # BeyondTrust EPM Inspection: Adapter Version
-    notice "Adapter Version"
+    info "Adapter Version"
     btEpmAdapter=$( defaults read /usr/local/libexec/Avecto/iC3Adapter/1.0/PMCAdapter.app/Contents/Info.plist CFBundleVersion )
     updateWelcomeDialog "progress: increment ${progressIncrementValue}"
     updateWelcomeDialog "progresstext: Adapter Version …"
 
     # BeyondTrust EPM Inspection: Package Manager Version
-    notice "Package Manager Version"
+    info "Package Manager Version"
     btEpmPackageManager=$( defaults read /Applications/BeyondTrust/PMCPackageManager.app/Contents/Info.plist CFBundleVersion )
     updateWelcomeDialog "progress: increment ${progressIncrementValue}"
     updateWelcomeDialog "progresstext: Package Manager Version …"
 
     # BeyondTrust EPM Inspection: System Extension
-    notice "System Extension"
+    info "System Extension"
     systemExtensionStatus=$( systemextensionsctl list | awk -F"[][]" '/com.beyondtrust.endpointsecurity/ {print $2}' )
     updateWelcomeDialog "progress: increment ${progressIncrementValue}"
     updateWelcomeDialog "progresstext: System Extension …"
 
     # BeyondTrust EPM Inspection: Policy Name and Revision
-    notice "Policy Name and Revision"
+    info "Policy Name and Revision"
     policyName=$( xmllint --xpath "string(//@PolicyName)" "${targetPolicy}" )
     policyRevision=$( xmllint --xpath "string(//@RevisionNumber)" "${targetPolicy}" )
     updateWelcomeDialog "progress: increment ${progressIncrementValue}"
     updateWelcomeDialog "progresstext: Policy Name and Revision …"
 
     # BeyondTrust EPM Inspection: Processes
-    notice "Processes"
+    info "Processes"
     updateWelcomeDialog "progress: increment ${progressIncrementValue}"
     updateWelcomeDialog "progresstext: BeyondTrust EPM Process 1 of 6 …"
     procesStatus "defendpointd"
@@ -529,25 +536,36 @@ else
     updateWelcomeDialog "progress: increment ${progressIncrementValue}"
     updateWelcomeDialog "progresstext: Analyzing …"
     logComment "Results for ${loggedInUser}:"
-    logComment "$( id "${loggedInUser}" )"
-    logComment "Computer Name: ${btEpmComputerName}"
+    info "$( id "${loggedInUser}" )"
+    logComment "Computer Name: ${computerName}"
     logComment "macOS Version: ${osVersion} (${osBuild})"
     logComment "Installation Status: Installed"
-    logComment "PMfM Status: $( pmfm status )"
-    logComment "sudo.conf Check: $( ls -lah /etc/sudo.conf )"
-    logComment "sudo.conf Contents: $( cat /etc/sudo.conf )"
-    logComment "sudoserver Check: $(  ls -lah /var/run/defendpoint_sudoserver )"
+    logComment "Server: $( defaults read /Library/Application\ Support/Avecto/iC3Adapter/config.plist Server )"
     logComment "Client Version: ${btEpmClient}"
     logComment "Adapter Version: ${btEpmAdapter}"
     logComment "Package Manager Version: ${btEpmPackageManager}"
     logComment "System Extension: ${systemExtensionStatus}"
     logComment "Policy Name and Revision: ${policyName} (r${policyRevision})"
-    logComment "Processes: ${processCheckResult}"
+    info "Processes: ${processCheckResult}"
+    info "PMfM Status: $( pmfm status )"
+    info "sudo.conf Check: $( ls -lah /etc/sudo.conf )"
+    info "sudo.conf Contents: $( cat /etc/sudo.conf )"
+    info "sudoserver Check: $(  ls -lah /var/run/defendpoint_sudoserver )"
+
+    if [[ "${operationMode}" == "verbose" ]]; then
+
+        info "Output 'defendpoint.plist' to ${scriptLog} …"
+        plutil -p /Library/Application\ Support/Avecto/Defendpoint/defendpoint.plist  >> "${scriptLog}"
+
+        info "Output MDM Overrides to ${scriptLog} …"
+        plutil -p /Library/Application\ Support/com.apple.TCC/MDMOverrides.plist >> "${scriptLog}"
+
+    fi
 
     # BeyondTrust EPM Inspection: Display results to user
     notice "Display results to user"
     timestamp="$( date '+%Y-%m-%d-%H%M%S' )"
-    updateWelcomeDialog "message: **Results for ${loggedInUser} on ${timestamp}**<br><br><br>- **macOS Version:** ${osVersion} (${osBuild})<br>- **Policy Name and Revision:** ${policyName} (r${policyRevision})<br>- **Computer Name:** ${btEpmComputerName}<br>- **Installation Status:** Installed<br>- **Client Version:** ${btEpmClient} <br>- **Adapter Version:** ${btEpmAdapter}<br>- **Package Manager Version:** ${btEpmPackageManager}<br>- **System Extension:** ${systemExtensionStatus}"
+    updateWelcomeDialog "message: **Results for ${loggedInUser} on ${timestamp}**<br><br><br>- **macOS Version:** ${osVersion} (${osBuild})<br>- **Policy Name and Revision:** ${policyName} (r${policyRevision})<br>- **Computer Name:** ${computerName}<br>- **Installation Status:** Installed<br>- **Client Version:** ${btEpmClient} <br>- **Adapter Version:** ${btEpmAdapter}<br>- **Package Manager Version:** ${btEpmPackageManager}<br>- **System Extension:** ${systemExtensionStatus}"
     updateWelcomeDialog "progress: complete"
     updateWelcomeDialog "progresstext: Complete!"
     sleep "${anticipationDuration}"
@@ -567,7 +585,7 @@ updateWelcomeDialog "progresstext: Elapsed Time: $(printf '%dh:%dm:%ds\n' $((SEC
 
 wait
 
-logComment "Elapsed Time: $(printf '%dh:%dm:%ds\n' $((SECONDS/3600)) $((SECONDS%3600/60)) $((SECONDS%60)))"
+info "Elapsed Time: $(printf '%dh:%dm:%ds\n' $((SECONDS/3600)) $((SECONDS%3600/60)) $((SECONDS%60)))"
 
 quitOut "End-of-line."
 

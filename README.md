@@ -48,6 +48,9 @@ The following racing stripes proved helpful in our initial deployment and ongoin
 ### [BeyondTrust EPM Health.bash](BeyondTrust%20EPM%20Health.bash)
 > A Jamf Pro Extension Attribute which determines the health of BeyondTrust Privilege Management for Mac
 
+### [BeyondTrust PMfM Workstyle.zsh](BeyondTrust%20PMfM%20Workstyle.zsh)
+> A Jamf Pro Extension Attribute which Determines the last logged-in user's assigned BeyondTrust Workstyle, presuming the use of [BeyondTrust EPM: Flexibilities](https://snelson.us/2024/08/beyondtrust-epm-flexibilities/)
+
 ### [Setup Your Mac Validation: BeyondTrust Privileged Access Management.bash](https://github.com/setup-your-mac/Setup-Your-Mac/blob/main/Validations/BeyondTrust%20Privileged%20Access%20Management.bash)
 > A script which determines the health of BeyondTrust Privilege Management for Mac
 

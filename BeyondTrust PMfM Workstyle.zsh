@@ -7,8 +7,8 @@
 #
 #   BeyondTrust PMfM Workstyle
 #
-#   Determines the last logged-in user's assigned BeyondTrust Workstyle, presuming the use of
-#   [BeyondTrust EPM: Flexibilities](https://snelson.us/2024/08/beyondtrust-epm-flexibilities/)
+#   Determines the last logged-in user's assigned BeyondTrust Workstyle.
+#   See: [BeyondTrust EPM: Flexibilities](https://snelson.us/2024/08/beyondtrust-epm-flexibilities/)
 #
 ####################################################################################################
 #
@@ -16,6 +16,9 @@
 #
 # Version 0.0.1, 17-Aug-2024, Dan K. Snelson (@dan-snelson)
 #   - Original Version (inspired by @Mike Wolf)
+#
+# Version 0.0.2, 19-Aug-2024, Dan K. Snelson (@dan-snelson)
+#   - Parse audit.log for more recently reported Workstyle (inspired by @tziegmann)
 #
 ####################################################################################################
 
@@ -27,7 +30,7 @@
 #
 ####################################################################################################
 
-scriptVersion="0.0.1"
+scriptVersion="0.0.2"
 export PATH=/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin/
 
 # Last Logged-in User
@@ -59,7 +62,8 @@ case "${lastUserGroupMembership}" in
         ;;
 
     *           )
-        echo "<result>Unknown</result>"
+        workstyle=$( grep '"Workstyle":' /var/log/defendpoint/audit.log | tail -n 1 | awk -F'": "' '{print $3,$NF}' | sed 's/",//g; s/^ *//g' )
+        echo "<result>${workstyle}</result>"
         ;;
 
 esac

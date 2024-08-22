@@ -34,7 +34,10 @@
 #
 # Version 0.0.7, 22-Aug-2024, Dan K. Snelson (@dan-snelson)
 #   - Added checksum validation of "${targetPolicy}"
-#   - Stopped incrementing the progress bar like an animal 
+#   - Stopped incrementing the progress bar like an animal
+#
+# Version 0.0.8, 22-Aug-2024, Dan K. Snelson (@dan-snelson)
+#   - Added "pmfmdiag all" (thanks, @tziegmann!)
 #
 ####################################################################################################
 
@@ -49,7 +52,7 @@
 export PATH=/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin/
 
 # Script Version
-scriptVersion="0.0.7"
+scriptVersion="0.0.8"
 
 # Client-side Log
 scriptLog="/var/log/org.churchofjesuschrist.log"
@@ -575,6 +578,7 @@ else
     fi
     info "Processes: ${processCheckResult}"
     info "PMfM Status: $( pmfm status )"
+    info "pmfmdiag: $( pmfmdiag all )"
     info "sudo.conf Check: $( ls -lah /etc/sudo.conf )"
     info "sudo.conf Contents: $( cat /etc/sudo.conf )"
     info "sudoserver Check: $(  ls -lah /var/run/defendpoint_sudoserver )"

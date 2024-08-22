@@ -16,7 +16,7 @@
 #   - Based on: https://snelson.us/2023/04/crowdstrike-falcon-inspector-0-0-2-with-swiftdialog/
 #
 # Version 0.0.2, 17-Jul-2024, Dan K. Snelson (@dan-snelson)
-#   - Added `progressIncrementValue` variable
+#   - Added `progressSteps` variable
 #   - Included macOS version
 #
 # Version 0.0.3, 17-Jul-2024, Dan K. Snelson (@dan-snelson)
@@ -32,6 +32,10 @@
 # Version 0.0.6, 29-Jul-2024, Dan K. Snelson (@dan-snelson)
 #   - Updates inspired by "CrowdStrike Falcon Inspector"
 #
+# Version 0.0.7, 22-Aug-2024, Dan K. Snelson (@dan-snelson)
+#   - Added checksum validation of "${targetPolicy}"
+#   - Stopped incrementing the progress bar like an animal 
+#
 ####################################################################################################
 
 
@@ -45,7 +49,7 @@
 export PATH=/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin/
 
 # Script Version
-scriptVersion="0.0.6"
+scriptVersion="0.0.7"
 
 # Client-side Log
 scriptLog="/var/log/org.churchofjesuschrist.log"
@@ -65,6 +69,9 @@ operationMode="${4:-"verbose"}"
 # Parameter 5: "Anticipation" Duration (in seconds)
 anticipationDuration="${5:-"3"}"
 
+# Parameter 6: Expected Policy Checksum [ $( openssl dgst -sha256 "${targetPolicy}" | awk -F'= ' '{print $2}' ) ]
+expectedPolicyChecksum="${6:-"f42199e2af570d41e6143f9095de74c19ebf1a05d0b279accb27ef2c20510b56"}"
+
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -79,6 +86,9 @@ organizationScriptName="BT-EPM-I"
 
 # Client-side BeyondTrust EMP Policy
 targetPolicy="/etc/defendpoint/ic3.xml"
+
+# Client-side Policy Checksum
+clientPolicyChecksum=$( openssl dgst -sha256 "${targetPolicy}" | awk -F'= ' '{print $2}' )
 
 
 
@@ -109,8 +119,8 @@ esac
 # swiftDialog Command File
 dialogWelcomeLog=$( mktemp /var/tmp/dialogWelcomeLog.XXXX )
 
-# Static value used to increment progress bar (i.e., 100 divided by the number of steps)
-progressIncrementValue="6"
+# The total number of steps for the progress bar, plus one (i.e., updateWelcomeDialog "progress: increment")
+progressSteps="17"
 
 
 
@@ -141,7 +151,7 @@ dialogWelcome="$dialogBinary \
 --button1disabled \
 --infobuttontext \"$infobuttontext\" \
 --infobuttonaction \"$infobuttonaction\" \
---progress \
+--progress \"$progressSteps\" \
 --progresstext \"$welcomeProgressText\" \
 --moveable \
 --titlefont size=22 \
@@ -455,7 +465,7 @@ if [[ ${operationMode} == "debug" ]]; then
 
 else
 
-    updateWelcomeDialog "progress: increment ${progressIncrementValue}"
+    updateWelcomeDialog "progress: increment"
     updateWelcomeDialog "progresstext: Inspecting …"
     sleep "${anticipationDuration}"
 
@@ -464,68 +474,80 @@ else
     # BeyondTrust EPM Inspection: Computer Name
     info "Computer Name"
     computerName=$( scutil --get LocalHostName )
-    updateWelcomeDialog "progress: increment ${progressIncrementValue}"
+    updateWelcomeDialog "progress: increment"
     updateWelcomeDialog "progresstext: Computer Name …"
 
     # BeyondTrust EPM Inspection: Installation
     info "Installation"
-    updateWelcomeDialog "progress: increment ${progressIncrementValue}"
+    updateWelcomeDialog "progress: increment"
     updateWelcomeDialog "progresstext: Installation …"
 
     # BeyondTrust EPM Inspection: Client Version
     info "Client Version"
     btEpmClient=$( defaults read /Applications/PrivilegeManagement.app/Contents/Info.plist CFBundleVersion )
-    updateWelcomeDialog "progress: increment ${progressIncrementValue}"
+    updateWelcomeDialog "progress: increment"
     updateWelcomeDialog "progresstext: Client Version …"
 
     # BeyondTrust EPM Inspection: Adapter Version
     info "Adapter Version"
     btEpmAdapter=$( defaults read /usr/local/libexec/Avecto/iC3Adapter/1.0/PMCAdapter.app/Contents/Info.plist CFBundleVersion )
-    updateWelcomeDialog "progress: increment ${progressIncrementValue}"
+    updateWelcomeDialog "progress: increment"
     updateWelcomeDialog "progresstext: Adapter Version …"
 
     # BeyondTrust EPM Inspection: Package Manager Version
     info "Package Manager Version"
     btEpmPackageManager=$( defaults read /Applications/BeyondTrust/PMCPackageManager.app/Contents/Info.plist CFBundleVersion )
-    updateWelcomeDialog "progress: increment ${progressIncrementValue}"
+    updateWelcomeDialog "progress: increment"
     updateWelcomeDialog "progresstext: Package Manager Version …"
 
     # BeyondTrust EPM Inspection: System Extension
     info "System Extension"
     systemExtensionStatus=$( systemextensionsctl list | awk -F"[][]" '/com.beyondtrust.endpointsecurity/ {print $2}' )
-    updateWelcomeDialog "progress: increment ${progressIncrementValue}"
+    updateWelcomeDialog "progress: increment"
     updateWelcomeDialog "progresstext: System Extension …"
 
     # BeyondTrust EPM Inspection: Policy Name and Revision
     info "Policy Name and Revision"
     policyName=$( xmllint --xpath "string(//@PolicyName)" "${targetPolicy}" )
     policyRevision=$( xmllint --xpath "string(//@RevisionNumber)" "${targetPolicy}" )
-    updateWelcomeDialog "progress: increment ${progressIncrementValue}"
+    updateWelcomeDialog "progress: increment"
     updateWelcomeDialog "progresstext: Policy Name and Revision …"
+
+    # BeyondTrust EPM Inspection: Policy Checksum Validation
+    info "Policy Checksum Validation"
+    if [[ "${clientPolicyChecksum}" == "${expectedPolicyChecksum}" ]]; then
+        checksumValidation="Checksum Passed"
+        logComment "${checksumValidation}"
+    else
+        checksumValidation="Checksum Failed"
+        warning "${checksumValidation}"
+    fi
+    updateWelcomeDialog "progress: increment"
+    updateWelcomeDialog "progresstext: Policy Checksum Validation …"
 
     # BeyondTrust EPM Inspection: Processes
     info "Processes"
-    updateWelcomeDialog "progress: increment ${progressIncrementValue}"
+    updateWelcomeDialog "progress: increment"
     updateWelcomeDialog "progresstext: BeyondTrust EPM Process 1 of 6 …"
     procesStatus "defendpointd"
 
-    updateWelcomeDialog "progress: increment ${progressIncrementValue}"
+    updateWelcomeDialog "progress: increment"
     updateWelcomeDialog "progresstext: BeyondTrust EPM Process 2 of 6 …"
     procesStatus "Custodian"
 
-    updateWelcomeDialog "progress: increment ${progressIncrementValue}"
+    updateWelcomeDialog "progress: increment"
     updateWelcomeDialog "progresstext: BeyondTrust EPM Process 3 of 6 …"
     procesStatus "PMCAdapter"
 
-    updateWelcomeDialog "progress: increment ${progressIncrementValue}"
+    updateWelcomeDialog "progress: increment"
     updateWelcomeDialog "progresstext: BeyondTrust EPM Process 4 of 6 …"
     procesStatus "PMCPackageManager"
 
-    updateWelcomeDialog "progress: increment ${progressIncrementValue}"
+    updateWelcomeDialog "progress: increment"
     updateWelcomeDialog "progresstext: BeyondTrust EPM Process 5 of 6 …"
 	procesStatus "PrivilegeManagement"
 
-    updateWelcomeDialog "progress: increment ${progressIncrementValue}"
+    updateWelcomeDialog "progress: increment"
     updateWelcomeDialog "progresstext: BeyondTrust EPM Process 6 of 6 …"
 	procesStatus "NewPrivilegeManagement"
 
@@ -533,7 +555,7 @@ else
 
     # BeyondTrust EPM Inspection: Output results to log
     notice "Output results to log"
-    updateWelcomeDialog "progress: increment ${progressIncrementValue}"
+    updateWelcomeDialog "progress: increment"
     updateWelcomeDialog "progresstext: Analyzing …"
     logComment "Results for ${loggedInUser}:"
     info "$( id "${loggedInUser}" )"
@@ -546,6 +568,11 @@ else
     logComment "Package Manager Version: ${btEpmPackageManager}"
     logComment "System Extension: ${systemExtensionStatus}"
     logComment "Policy Name and Revision: ${policyName} (r${policyRevision})"
+    if [[ "${checksumValidation}" == *"Failed" ]]; then
+        warning "Policy Checksum Validation: ${checksumValidation}"
+    else
+        logComment "Policy Checksum Validation: ${checksumValidation}"
+    fi
     info "Processes: ${processCheckResult}"
     info "PMfM Status: $( pmfm status )"
     info "sudo.conf Check: $( ls -lah /etc/sudo.conf )"

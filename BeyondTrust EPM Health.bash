@@ -3,8 +3,6 @@
 #
 # ABOUT
 #
-#   BeyondTrust EPM Health
-#
 #   A Jamf Pro Extension Attribute which determines the health of BeyondTrust Privilege Management for Mac
 # 
 #   If the `targetPolicy` is not found, "Not Installed" will be returned.
@@ -38,6 +36,9 @@
 #       Added Eric Hemmeter-inspired racing-stripe
 #       Output edits (i.e., removed "Policy:")
 #
+#   Version 0.0.5, 22-Aug-2024, Dan K. Snelson (@dan-snelson)
+#       Added checksum of "${targetPolicy}"
+#
 ####################################################################################################
 
 
@@ -48,7 +49,7 @@
 #
 ####################################################################################################
 
-scriptVersion="0.0.4"
+scriptVersion="0.0.5"
 export PATH=/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin/
 targetPolicy="/etc/defendpoint/ic3.xml"
 
@@ -98,18 +99,19 @@ if [[ -f "${targetPolicy}" ]] ; then
     policyName=$( xmllint --xpath "string(//@PolicyName)" "${targetPolicy}" )
     policyRevision=$( xmllint --xpath "string(//@RevisionNumber)" "${targetPolicy}" )
 
+    # Capture BT PMfM Policy Checksum
+    policyChecksum=$( openssl dgst -sha256 "${targetPolicy}" | awk -F'= ' '{print $2}' )
+
     # Validate various BT PMfM Processes
     procesStatus "defendpointd"
     procesStatus "Custodian"
     procesStatus "PMCAdapter"
-    procesStatus "PMCPackageManager"
-	# procesStatus "PrivilegeManagement"     	# Appears to only run if a user is logged-in
-	# procesStatus "NewPrivilegeManagement"     # Appears to only run if a user is logged-in
+    # procesStatus "PrivilegeManagement"     # Appears to only run if a user is logged-in
 
     # Remove trailing "; "
     processCheckResult=${processCheckResult/%; }
 
-    RESULT="${policyName} (r${policyRevision}); System Extension: ${systemExtensionTest}; ${processCheckResult}"
+    RESULT="${policyName} (r${policyRevision}); System Extension: ${systemExtensionTest}; ${processCheckResult}; Policy Checksum: ${policyChecksum}"
 
 else
 

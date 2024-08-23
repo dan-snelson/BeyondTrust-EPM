@@ -654,7 +654,18 @@ else
     # BeyondTrust EPM Inspection: Display results to user
     notice "Display results to user"
     timestamp="$( date '+%Y-%m-%d-%H%M%S' )"
-    updateWelcomeDialog "message: **Results for ${loggedInUser} on ${timestamp}**<br><br><br>- **macOS Version:** ${osVersion} (${osBuild})<br>- **Policy Name and Revision:** ${policyName} (r${policyRevision})<br>- **Assigned Flexibility:** ${assignedFlexibility}<br>- **Computer Name:** ${computerName}<br>- **Installation Status:** Installed<br>- **Client Version:** ${btEpmClient} <br>- **Adapter Version:** ${btEpmAdapter}<br>- **Package Manager Version:** ${btEpmPackageManager}<br>- **System Extension:** ${systemExtensionStatus}"
+    updateWelcomeDialog "message: \
+**Results for ${loggedInUser} on ${timestamp}**<br><br><br> \
+- **macOS Version:** ${osVersion} (${osBuild})<br> \
+- **Policy Name and Revision:** ${policyName} (r${policyRevision})<br> \
+- **Assigned Flexibility:** ${assignedFlexibility}<br> \
+- **Computer Name:** ${computerName}<br> \
+- **Installation Status:** Installed<br> \
+- **Client Version:** ${btEpmClient} <br> \
+- **Adapter Version:** ${btEpmAdapter}<br> \
+- **Package Manager Version:** ${btEpmPackageManager}<br> \
+- **System Extension:** ${systemExtensionStatus}
+"
     updateWelcomeDialog "progress: complete"
     updateWelcomeDialog "progresstext: Complete!"
     sleep "${anticipationDuration}"

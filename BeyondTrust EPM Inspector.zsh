@@ -60,9 +60,6 @@ scriptVersion="0.0.9"
 # Client-side Log
 scriptLog="/var/log/org.churchofjesuschrist.log"
 
-# Logged-in User
-loggedInUser=$( echo "show State:/Users/ConsoleUser" | scutil | awk '/Name :/ { print $3 }' )
-
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #

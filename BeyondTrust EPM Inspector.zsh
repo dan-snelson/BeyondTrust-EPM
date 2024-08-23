@@ -42,6 +42,9 @@
 # Version 0.0.9, 23-Aug-2024, Dan K. Snelson (@dan-snelson)
 #   - Added UseSheets status check
 #
+# Version 0.0.10, 23-Aug-2024, Dan K. Snelson (@dan-snelson)
+#   - Added output for assigned flexibility (See: [BeyondTrust PMfM Workstyle.zsh](https://github.com/dan-snelson/BeyondTrust-EPM/blob/main/BeyondTrust%20PMfM%20Workstyle.zsh))
+#
 ####################################################################################################
 
 
@@ -55,7 +58,7 @@
 export PATH=/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin/
 
 # Script Version
-scriptVersion="0.0.9"
+scriptVersion="0.0.10"
 
 # Client-side Log
 scriptLog="/var/log/org.churchofjesuschrist.log"
@@ -115,6 +118,7 @@ loggedInUser=$( echo "show State:/Users/ConsoleUser" | scutil | awk '/Name :/ { 
 loggedInUserFullname=$( id -F "${loggedInUser}" )
 loggedInUserFirstname=$( echo "$loggedInUserFullname" | sed -E 's/^.*, // ; s/([^ ]*).*/\1/' | sed 's/\(.\{25\}\).*/\1…/' | awk '{print ( $0 == toupper($0) ? toupper(substr($0,1,1))substr(tolower($0),2) : toupper(substr($0,1,1))substr($0,2) )}' )
 loggedInUserID=$( id -u "${loggedInUser}" )
+loggedInUserGroupMembership=$( id -Gn "${loggedInUser}" )
 
 
 
@@ -147,7 +151,7 @@ esac
 dialogWelcomeLog=$( mktemp /var/tmp/dialogWelcomeLog.XXXX )
 
 # The total number of steps for the progress bar, plus one (i.e., updateWelcomeDialog "progress: increment")
-progressSteps="17"
+progressSteps="18"
 
 
 
@@ -185,7 +189,7 @@ dialogWelcome="$dialogBinary \
 --messagefont size=14 \
 --iconsize 135 \
 --width 650 \
---height 350 \
+--height 375 \
 --commandfile \"$dialogWelcomeLog\" "
 
 # --overlayicon \"$overlayIcon\" \
@@ -388,6 +392,28 @@ function procesStatus() {
 
 
 
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# Check for assigned flexibilty
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+function flexibilityCheck() {
+
+    case "${loggedInUserGroupMembership}" in
+
+        *"high"*    )   assignedFlexibility="High"      ;;
+        *"medium"*  )   assignedFlexibility="Medium"    ;;
+        *"low"*     )   assignedFlexibility="Low"       ;;
+        *           )
+            workstyle=$( grep '"Workstyle":' /var/log/defendpoint/audit.log | tail -n 1 | awk -F'": "' '{print $3,$NF}' | sed 's/",//g; s/^ *//g' )
+            assignedFlexibility="${workstyle}"
+            ;;
+
+    esac
+
+}
+
+
+
 ####################################################################################################
 #
 # Pre-flight Checks
@@ -552,6 +578,12 @@ else
     updateWelcomeDialog "progress: increment"
     updateWelcomeDialog "progresstext: Policy Checksum Validation …"
 
+    # BeyondTrust EPM Inspection: Assigned Flexibility
+    info "Assigned Flexibility"
+    flexibilityCheck
+    updateWelcomeDialog "progress: increment"
+    updateWelcomeDialog "progresstext: Assigned Flexibility …"
+
     # BeyondTrust EPM Inspection: Processes
     info "Processes"
     updateWelcomeDialog "progress: increment"
@@ -596,6 +628,7 @@ else
     logComment "Package Manager Version: ${btEpmPackageManager}"
     logComment "System Extension: ${systemExtensionStatus}"
     logComment "Policy Name and Revision: ${policyName} (r${policyRevision})"
+    logComment "Assigned Flexibility: ${assignedFlexibility}"
     if [[ "${checksumValidation}" == *"Failed" ]]; then
         warning "Policy Checksum Validation: ${checksumValidation}"
     else
@@ -621,7 +654,7 @@ else
     # BeyondTrust EPM Inspection: Display results to user
     notice "Display results to user"
     timestamp="$( date '+%Y-%m-%d-%H%M%S' )"
-    updateWelcomeDialog "message: **Results for ${loggedInUser} on ${timestamp}**<br><br><br>- **macOS Version:** ${osVersion} (${osBuild})<br>- **Policy Name and Revision:** ${policyName} (r${policyRevision})<br>- **Computer Name:** ${computerName}<br>- **Installation Status:** Installed<br>- **Client Version:** ${btEpmClient} <br>- **Adapter Version:** ${btEpmAdapter}<br>- **Package Manager Version:** ${btEpmPackageManager}<br>- **System Extension:** ${systemExtensionStatus}"
+    updateWelcomeDialog "message: **Results for ${loggedInUser} on ${timestamp}**<br><br><br>- **macOS Version:** ${osVersion} (${osBuild})<br>- **Policy Name and Revision:** ${policyName} (r${policyRevision})<br>- **Assigned Flexibility:** ${assignedFlexibility}<br>- **Computer Name:** ${computerName}<br>- **Installation Status:** Installed<br>- **Client Version:** ${btEpmClient} <br>- **Adapter Version:** ${btEpmAdapter}<br>- **Package Manager Version:** ${btEpmPackageManager}<br>- **System Extension:** ${systemExtensionStatus}"
     updateWelcomeDialog "progress: complete"
     updateWelcomeDialog "progresstext: Complete!"
     sleep "${anticipationDuration}"

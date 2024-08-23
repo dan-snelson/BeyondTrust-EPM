@@ -39,6 +39,9 @@
 # Version 0.0.8, 22-Aug-2024, Dan K. Snelson (@dan-snelson)
 #   - Added "pmfmdiag all" (thanks, @tziegmann!)
 #
+# Version 0.0.9, 23-Aug-2024, Dan K. Snelson (@dan-snelson)
+#   - Added UseSheets status check
+#
 ####################################################################################################
 
 
@@ -52,7 +55,7 @@
 export PATH=/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin/
 
 # Script Version
-scriptVersion="0.0.8"
+scriptVersion="0.0.9"
 
 # Client-side Log
 scriptLog="/var/log/org.churchofjesuschrist.log"
@@ -108,6 +111,30 @@ if [[ -n $osVersionExtra ]] && [[ "${osMajorVersion}" -ge 13 ]]; then osVersion=
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# Logged-in User Variables
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+loggedInUser=$( echo "show State:/Users/ConsoleUser" | scutil | awk '/Name :/ { print $3 }' )
+loggedInUserFullname=$( id -F "${loggedInUser}" )
+loggedInUserFirstname=$( echo "$loggedInUserFullname" | sed -E 's/^.*, // ; s/([^ ]*).*/\1/' | sed 's/\(.\{25\}\).*/\1…/' | awk '{print ( $0 == toupper($0) ? toupper(substr($0,1,1))substr(tolower($0),2) : toupper(substr($0,1,1))substr($0,2) )}' )
+loggedInUserID=$( id -u "${loggedInUser}" )
+
+
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# UseSheets Status
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+useSheetStatus=$( defaults read "/Users/${loggedInUser}/Library/Preferences/com.apple.Preferences.plist" UseSheets 2>&1 )
+if [[ "${useSheetStatus}" == "0" ]]; then
+    useSheetStatusHumanReadable="passed"
+else
+    useSheetStatusHumanReadable="failed"
+fi
+
+
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # Dialog binary (and enable swiftDialog's `--verbose` mode with script's operationMode)
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -132,7 +159,7 @@ progressSteps="17"
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 title="${humanReadableScriptName} (${scriptVersion})"
-message="This script analyzes the installation of BeyondTrust EPM then reports the findings in this window.<br><br>Please wait …"
+message="**Happy $( date +'%A' ), ${loggedInUserFirstname}!**<br><br>This script analyzes the installation of BeyondTrust Endpoint Privilege Management then reports the findings in this window.<br><br>Please wait …"
 icon="https://ics.services.jamfcloud.com/icon/hash_a6d0e6852d3319a200e58036039cc69bb09a0882d89e799263c951a632d3a5d2"
 # overlayIcon=$( defaults read /Library/Preferences/com.jamfsoftware.jamf.plist self_service_app_path )
 button1text="Wait"
@@ -565,6 +592,7 @@ else
     logComment "Computer Name: ${computerName}"
     logComment "macOS Version: ${osVersion} (${osBuild})"
     logComment "Installation Status: Installed"
+    logComment "UseSheets Status: ${useSheetStatusHumanReadable}"
     logComment "Server: $( defaults read /Library/Application\ Support/Avecto/iC3Adapter/config.plist Server )"
     logComment "Client Version: ${btEpmClient}"
     logComment "Adapter Version: ${btEpmAdapter}"

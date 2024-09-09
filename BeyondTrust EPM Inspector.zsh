@@ -45,6 +45,9 @@
 # Version 0.0.10, 23-Aug-2024, Dan K. Snelson (@dan-snelson)
 #   - Added output for assigned flexibility (See: [BeyondTrust PMfM Workstyle.zsh](https://github.com/dan-snelson/BeyondTrust-EPM/blob/main/BeyondTrust%20PMfM%20Workstyle.zsh))
 #
+# Version 0.0.11, 09-Sep-2024, Dan K. Snelson (@dan-snelson)
+#   - Added output for BeyondTrust PMfM Accounts (See: [9. macOS Sequoia 15 and “missing” EPM accounts](https://snelson.us/2024/08/beyondtrust-epm-racing-stripes/#9))
+#
 ####################################################################################################
 
 
@@ -58,7 +61,7 @@
 export PATH=/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin/
 
 # Script Version
-scriptVersion="0.0.10"
+scriptVersion="0.0.11"
 
 # Client-side Log
 scriptLog="/var/log/org.churchofjesuschrist.log"
@@ -612,7 +615,10 @@ else
 
     processCheckResult=${processCheckResult/%; }
 
+    ###
     # BeyondTrust EPM Inspection: Output results to log
+    ###
+
     notice "Output results to log"
     updateWelcomeDialog "progress: increment"
     updateWelcomeDialog "progresstext: Analyzing …"
@@ -620,6 +626,7 @@ else
     info "$( id "${loggedInUser}" )"
     logComment "Computer Name: ${computerName}"
     logComment "macOS Version: ${osVersion} (${osBuild})"
+    logComment "EPM Accounts: $( dscl . list /Users | grep -E "(_avectodaemon|_defendpoint)" | tr '\n' ' ')"
     logComment "Installation Status: Installed"
     logComment "UseSheets Status: ${useSheetStatusHumanReadable}"
     logComment "Server: $( defaults read /Library/Application\ Support/Avecto/iC3Adapter/config.plist Server )"

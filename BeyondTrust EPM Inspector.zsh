@@ -11,42 +11,8 @@
 #
 # HISTORY
 #
-# Version 0.0.1, 16-Jul-2024, Dan K. Snelson (@dan-snelson)
-#   - Original, proof-of-concept version
-#   - Based on: https://snelson.us/2023/04/crowdstrike-falcon-inspector-0-0-2-with-swiftdialog/
-#
-# Version 0.0.2, 17-Jul-2024, Dan K. Snelson (@dan-snelson)
-#   - Added `progressSteps` variable
-#   - Included macOS version
-#
-# Version 0.0.3, 17-Jul-2024, Dan K. Snelson (@dan-snelson)
-#   - Output MDM Overrides to scriptLog
-#
-# Version 0.0.4, 17-Jul-2024, Dan K. Snelson (@dan-snelson)
-#   - Changed `debugMode` to more robust `operationMode`
-#
-# Version 0.0.5, 18-Jul-2024, Dan K. Snelson (@dan-snelson)
-#   - Added output for the BeyondTrust PMC Server URL
-#   - Output 'defendpoint.plist' to ${scriptLog} (in "verbose" Operation Mode)
-#
-# Version 0.0.6, 29-Jul-2024, Dan K. Snelson (@dan-snelson)
-#   - Updates inspired by "CrowdStrike Falcon Inspector"
-#
-# Version 0.0.7, 22-Aug-2024, Dan K. Snelson (@dan-snelson)
-#   - Added checksum validation of "${targetPolicy}"
-#   - Stopped incrementing the progress bar like an animal
-#
-# Version 0.0.8, 22-Aug-2024, Dan K. Snelson (@dan-snelson)
-#   - Added "pmfmdiag all" (thanks, @tziegmann!)
-#
-# Version 0.0.9, 23-Aug-2024, Dan K. Snelson (@dan-snelson)
-#   - Added UseSheets status check
-#
-# Version 0.0.10, 23-Aug-2024, Dan K. Snelson (@dan-snelson)
-#   - Added output for assigned flexibility (See: [BeyondTrust PMfM Workstyle.zsh](https://github.com/dan-snelson/BeyondTrust-EPM/blob/main/BeyondTrust%20PMfM%20Workstyle.zsh))
-#
-# Version 0.0.11, 09-Sep-2024, Dan K. Snelson (@dan-snelson)
-#   - Added output for BeyondTrust PMfM Accounts (See: [9. macOS Sequoia 15 and “missing” EPM accounts](https://snelson.us/2024/08/beyondtrust-epm-racing-stripes/#9))
+# Version 1.0.0, 21-Mar-2025, Dan K. Snelson (@dan-snelson)
+#   - First "official" release
 #
 ####################################################################################################
 
@@ -61,7 +27,7 @@
 export PATH=/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin/
 
 # Script Version
-scriptVersion="0.0.11"
+scriptVersion="1.0.0"
 
 # Client-side Log
 scriptLog="/var/log/org.churchofjesuschrist.log"
@@ -93,7 +59,7 @@ humanReadableScriptName="BeyondTrust EPM Inspector"
 # Organization's Script Name
 organizationScriptName="BT-EPM-I"
 
-# Client-side BeyondTrust EMP Policy
+# Client-side BeyondTrust EPM Policy
 targetPolicy="/etc/defendpoint/ic3.xml"
 
 # Client-side Policy Checksum
@@ -102,7 +68,7 @@ clientPolicyChecksum=$( openssl dgst -sha256 "${targetPolicy}" | awk -F'= ' '{pr
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# Operating System, Computer Model Name, etc.
+# Operating System and Serial Number
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 osVersion=$( sw_vers -productVersion )
@@ -110,6 +76,7 @@ osVersionExtra=$( sw_vers -productVersionExtra )
 osBuild=$( sw_vers -buildVersion )
 osMajorVersion=$( echo "${osVersion}" | awk -F '.' '{print $1}' )
 if [[ -n $osVersionExtra ]] && [[ "${osMajorVersion}" -ge 13 ]]; then osVersion="${osVersion} ${osVersionExtra}"; fi # Report RSR sub version if applicable
+serialNumber=$( system_profiler SPHardwareDataType | awk '/Serial/{print $NF}' )
 
 
 
@@ -153,6 +120,9 @@ esac
 # swiftDialog Command File
 dialogWelcomeLog=$( mktemp /var/tmp/dialogWelcomeLog.XXXX )
 
+# Set Permissions on Dialog Command Files
+chmod -vv 644 "${dialogWelcomeLog}" | tee -a "${scriptLog}"
+
 # The total number of steps for the progress bar, plus one (i.e., updateWelcomeDialog "progress: increment")
 progressSteps="18"
 
@@ -164,7 +134,7 @@ progressSteps="18"
 
 title="${humanReadableScriptName} (${scriptVersion})"
 message="**Happy $( date +'%A' ), ${loggedInUserFirstname}!**<br><br>This script analyzes the installation of BeyondTrust Endpoint Privilege Management then reports the findings in this window.<br><br>Please wait …"
-icon="https://ics.services.jamfcloud.com/icon/hash_a6d0e6852d3319a200e58036039cc69bb09a0882d89e799263c951a632d3a5d2"
+icon="https://ics.services.jamfcloud.com/icon/hash_95048c6566448ee5c57a1ba7f3137cdf7e1c3c22201a5889599c651b766f567a"
 # overlayIcon=$( defaults read /Library/Preferences/com.jamfsoftware.jamf.plist self_service_app_path )
 button1text="Wait"
 infobuttontext="KB8675309"
@@ -409,6 +379,7 @@ function flexibilityCheck() {
         *           )
             workstyle=$( grep '"Workstyle":' /var/log/defendpoint/audit.log | tail -n 1 | awk -F'": "' '{print $3,$NF}' | sed 's/",//g; s/^ *//g' )
             assignedFlexibility="${workstyle}"
+            if [[ -z "${assignedFlexibility}" ]] && assignedFlexibility="NOT INSTALLED"
             ;;
 
     esac
@@ -474,9 +445,9 @@ dialogCheck
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 if [[ -e "/Applications/PrivilegeManagement.app" ]]; then
-    preFlight "BeyondTrust EPM Client installed; proceeding …"
+    preFlight "BeyondTrust EPM Client installed"
 else
-    fatal "BeyondTrust EPM Client NOT installed; exiting"
+    preFlight "BeyondTrust EPM Client NOT installed"
 fi
 
 
@@ -517,7 +488,7 @@ if [[ ${operationMode} == "debug" ]]; then
     systemExtensionStatus="DEBUG"
     policyName="DEBUG"
     policyRevision="DEBUG"
-    updateWelcomeDialog "message: **Results for ${loggedInUser}**<br><br><br>- **macOS Version:** ${osVersion} (${osBuild})<br>- **Policy Name and Revision:** ${policyName} (r${policyRevision})<br>- **Computer Name:** ${computerName}<br>- **Installation Status:** DEBUG<br>- **Client Version:** ${btEpmClient} <br>- **Adapter Version:** ${btEpmAdapter}<br>- **Package Manager Version:** ${btEpmPackageManager}<br>- **System Extension:** ${systemExtensionStatus}"
+    updateWelcomeDialog "message: **Results for ${loggedInUser}**<br><br><br>- **Computer Name:** ${computerName}<br>- **Serial Number:** ${serialNumber}<br>- **macOS Version:** ${osVersion} (${osBuild})<br>- **Policy Name and Revision:** ${policyName} ${policyRevision}<br>- **Client Version:** ${btEpmClient} <br>- **Adapter Version:** ${btEpmAdapter}<br>- **Package Manager Version:** ${btEpmPackageManager}<br>- **System Extension:** ${systemExtensionStatus}"
 
 else
 
@@ -541,31 +512,37 @@ else
     # BeyondTrust EPM Inspection: Client Version
     info "Client Version"
     btEpmClient=$( defaults read /Applications/PrivilegeManagement.app/Contents/Info.plist CFBundleVersion )
+    if [[ -z "${btEpmClient}" ]] && btEpmClient="NOT INSTALLED"
     updateWelcomeDialog "progress: increment"
     updateWelcomeDialog "progresstext: Client Version …"
 
     # BeyondTrust EPM Inspection: Adapter Version
     info "Adapter Version"
     btEpmAdapter=$( defaults read /usr/local/libexec/Avecto/iC3Adapter/1.0/PMCAdapter.app/Contents/Info.plist CFBundleVersion )
+    if [[ -z "${btEpmAdapter}" ]] && btEpmAdapter="NOT INSTALLED"
     updateWelcomeDialog "progress: increment"
     updateWelcomeDialog "progresstext: Adapter Version …"
 
     # BeyondTrust EPM Inspection: Package Manager Version
     info "Package Manager Version"
     btEpmPackageManager=$( defaults read /Applications/BeyondTrust/PMCPackageManager.app/Contents/Info.plist CFBundleVersion )
+    if [[ -z "${btEpmPackageManager}" ]] && btEpmPackageManager="NOT INSTALLED"
     updateWelcomeDialog "progress: increment"
     updateWelcomeDialog "progresstext: Package Manager Version …"
 
     # BeyondTrust EPM Inspection: System Extension
     info "System Extension"
     systemExtensionStatus=$( systemextensionsctl list | awk -F"[][]" '/com.beyondtrust.endpointsecurity/ {print $2}' )
+    if [[ -z "${systemExtensionStatus}" ]] && systemExtensionStatus="NOT INSTALLED"
     updateWelcomeDialog "progress: increment"
     updateWelcomeDialog "progresstext: System Extension …"
 
     # BeyondTrust EPM Inspection: Policy Name and Revision
     info "Policy Name and Revision"
     policyName=$( xmllint --xpath "string(//@PolicyName)" "${targetPolicy}" )
+    if [[ -z "${policyName}" ]] && policyName="NOT INSTALLED"
     policyRevision=$( xmllint --xpath "string(//@RevisionNumber)" "${targetPolicy}" )
+    if [[ -z "${policyRevision}" ]] && policyRevision="" || policyRevision="(r${policyRevision})"
     updateWelcomeDialog "progress: increment"
     updateWelcomeDialog "progresstext: Policy Name and Revision …"
 
@@ -590,28 +567,28 @@ else
     # BeyondTrust EPM Inspection: Processes
     info "Processes"
     updateWelcomeDialog "progress: increment"
-    updateWelcomeDialog "progresstext: BeyondTrust EPM Process 1 of 6 …"
+    updateWelcomeDialog "progresstext: BeyondTrust EPM Process 1 of 5 …"
     procesStatus "defendpointd"
 
     updateWelcomeDialog "progress: increment"
-    updateWelcomeDialog "progresstext: BeyondTrust EPM Process 2 of 6 …"
+    updateWelcomeDialog "progresstext: BeyondTrust EPM Process 2 of 5 …"
     procesStatus "Custodian"
 
     updateWelcomeDialog "progress: increment"
-    updateWelcomeDialog "progresstext: BeyondTrust EPM Process 3 of 6 …"
+    updateWelcomeDialog "progresstext: BeyondTrust EPM Process 3 of 5 …"
     procesStatus "PMCAdapter"
 
     updateWelcomeDialog "progress: increment"
-    updateWelcomeDialog "progresstext: BeyondTrust EPM Process 4 of 6 …"
+    updateWelcomeDialog "progresstext: BeyondTrust EPM Process 4 of 5 …"
     procesStatus "PMCPackageManager"
 
     updateWelcomeDialog "progress: increment"
-    updateWelcomeDialog "progresstext: BeyondTrust EPM Process 5 of 6 …"
-	procesStatus "PrivilegeManagement"
+    updateWelcomeDialog "progresstext: BeyondTrust EPM Process 5 of 5 …"
+    procesStatus "PrivilegeManagement"
 
-    updateWelcomeDialog "progress: increment"
-    updateWelcomeDialog "progresstext: BeyondTrust EPM Process 6 of 6 …"
-	procesStatus "NewPrivilegeManagement"
+    # updateWelcomeDialog "progress: increment"
+    # updateWelcomeDialog "progresstext: BeyondTrust EPM Process 6 of 6 …"
+    # procesStatus "NewPrivilegeManagement"
 
     processCheckResult=${processCheckResult/%; }
 
@@ -625,16 +602,16 @@ else
     logComment "Results for ${loggedInUser}:"
     info "$( id "${loggedInUser}" )"
     logComment "Computer Name: ${computerName}"
+    logComment "Serial Number: ${serialNumber}"
     logComment "macOS Version: ${osVersion} (${osBuild})"
     logComment "EPM Accounts: $( dscl . list /Users | grep -E "(_avectodaemon|_defendpoint)" | tr '\n' ' ')"
-    logComment "Installation Status: Installed"
     logComment "UseSheets Status: ${useSheetStatusHumanReadable}"
     logComment "Server: $( defaults read /Library/Application\ Support/Avecto/iC3Adapter/config.plist Server )"
     logComment "Client Version: ${btEpmClient}"
     logComment "Adapter Version: ${btEpmAdapter}"
     logComment "Package Manager Version: ${btEpmPackageManager}"
     logComment "System Extension: ${systemExtensionStatus}"
-    logComment "Policy Name and Revision: ${policyName} (r${policyRevision})"
+    logComment "Policy Name and Revision: ${policyName} ${policyRevision}"
     logComment "Assigned Flexibility: ${assignedFlexibility}"
     if [[ "${checksumValidation}" == *"Failed" ]]; then
         warning "Policy Checksum Validation: ${checksumValidation}"
@@ -646,7 +623,7 @@ else
     info "pmfmdiag: $( pmfmdiag all )"
     info "sudo.conf Check: $( ls -lah /etc/sudo.conf )"
     info "sudo.conf Contents: $( cat /etc/sudo.conf )"
-    info "sudoserver Check: $(  ls -lah /var/run/defendpoint_sudoserver )"
+    info "defendpoint Check: $(  ls -lah /var/run/defendpoint_* )"
 
     if [[ "${operationMode}" == "verbose" ]]; then
 
@@ -663,11 +640,11 @@ else
     timestamp="$( date '+%Y-%m-%d-%H%M%S' )"
     updateWelcomeDialog "message: \
 **Results for ${loggedInUser} on ${timestamp}**<br><br><br> \
-- **macOS Version:** ${osVersion} (${osBuild})<br> \
-- **Policy Name and Revision:** ${policyName} (r${policyRevision})<br> \
-- **Assigned Flexibility:** ${assignedFlexibility}<br> \
 - **Computer Name:** ${computerName}<br> \
-- **Installation Status:** Installed<br> \
+- **Serial Number:** ${serialNumber}<br> \
+- **macOS Version:** ${osVersion} (${osBuild})<br> \
+- **Policy Name and Revision:** ${policyName} ${policyRevision}<br> \
+- **Assigned Flexibility:** ${assignedFlexibility}<br> \
 - **Client Version:** ${btEpmClient} <br> \
 - **Adapter Version:** ${btEpmAdapter}<br> \
 - **Package Manager Version:** ${btEpmPackageManager}<br> \

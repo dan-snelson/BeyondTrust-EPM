@@ -3,13 +3,13 @@
 #
 # ABOUT
 #
-#   Removes admin rights from adminstrators NOT specificially listed in `approvedAdmins`
+#    Removes admin rights from adminstrators NOT specificially listed in `approvedAdmins`
 #
 ####################################################################################################
 #
 # HISTORY
 #
-#   Version 1.0.0, 08-May-2023, Dan K. Snelson (@dan-snelson)
+#    Version 1.0.0, 08-May-2023, Dan K. Snelson (@dan-snelson)
 #       Original version
 #
 #   Version 2.0.0, 20-May-2023, Dan K. Snelson (@dan-snelson)
@@ -29,6 +29,9 @@
 #   Version 2.0.4, 07-Jun-2024, Dan K. Snelson (@dan-snelson)
 #       - Commented-out check for "PMCAdapter" in favor of check for "PMCPackageManager"
 #
+#   Version 2.0.5, 10-Mar-2025, Dan K. Snelson (@dan-snelson)
+#       - Updated for BeyondTrust PMfM 25.2
+#
 ####################################################################################################
 
 
@@ -43,7 +46,7 @@
 # Script Version and Jamf Pro Script Parameters
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-scriptVersion="2.0.4"
+scriptVersion="2.0.5"
 export PATH=/usr/bin:/bin:/usr/sbin:/sbin
 scriptLog="${4:-"/var/log/org.churchofjesuschrist.log"}"    # Parameter 4: Script Log Location
 approvedAdmins=(root _avectodaemon yourLocalAdmin)          # Space-delimited list of approved local admins
@@ -195,7 +198,7 @@ procesStatus "Custodian"
 # procesStatus "PMCAdapter"
 procesStatus "PMCPackageManager"
 procesStatus "PrivilegeManagement"
-procesStatus "NewPrivilegeManagement"
+# procesStatus "NewPrivilegeManagement"
 
 updateScriptLog "Status: ${RESULT}"
 

@@ -14,6 +14,9 @@
 # Version 1.0.0, 21-Mar-2025, Dan K. Snelson (@dan-snelson)
 #   - First "official" release
 #
+# Version 1.1.0, 10-Jun-2025, Dan K. Snelson (@dan-snelson)
+#   - Added check for PMC-related Keychain entries
+#
 ####################################################################################################
 
 
@@ -27,7 +30,7 @@
 export PATH=/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin/
 
 # Script Version
-scriptVersion="1.0.0"
+scriptVersion="1.1.0"
 
 # Client-side Log
 scriptLog="/var/log/org.churchofjesuschrist.log"
@@ -102,6 +105,19 @@ if [[ "${useSheetStatus}" == "0" ]]; then
 else
     useSheetStatusHumanReadable="failed"
 fi
+
+
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# PMC-related Keychain entries
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+typeset pmcKeychainEntries=( 
+    PMCPackageManager
+    PMCPlatformClient
+    PMCPlatformSignatureKey
+    PMCSignatureKey
+)
 
 
 
@@ -586,11 +602,29 @@ else
     updateWelcomeDialog "progresstext: BeyondTrust EPM Process 5 of 5 …"
     procesStatus "PrivilegeManagement"
 
-    # updateWelcomeDialog "progress: increment"
-    # updateWelcomeDialog "progresstext: BeyondTrust EPM Process 6 of 6 …"
-    # procesStatus "NewPrivilegeManagement"
-
     processCheckResult=${processCheckResult/%; }
+
+    # BeyondTrust PMC-related Keychain entries
+    info "PMC-related Keychain entries"
+    updateWelcomeDialog "progresstext: PMC-related Keychain entries …"
+    updateWelcomeDialog "progress: increment"
+
+    keychainDump=$( security dump-keychain /Library/Keychains/System.keychain | grep -i PMC | awk -F' ' '{gsub(/<blob>="|"$/,"",$2); print $2}' | xargs )
+    if [[ -n "${keychainDump}" ]]; then
+        logComment "PMC-related Keychain entries: ${keychainDump}"
+        for pmcKeychainEntry in "${pmcKeychainEntries[@]}"; do
+            if [[ "${keychainDump}" == *"${pmcKeychainEntry}"* ]]; then
+                logComment "PMC-related Keychain entry '${pmcKeychainEntry}' found"
+                pmcKeychainResult+="'${pmcKeychainEntry}' found; "
+            else
+                warning "PMC-related Keychain entry '${pmcKeychainEntry}' NOT found"
+                pmcKeychainResult+="'${pmcKeychainEntry}' NOT found; "
+            fi
+        done
+    else
+        warning "No PMC-related Keychain entries found"
+    fi
+    pmcKeychainResult=${pmcKeychainResult/%; }
 
     ###
     # BeyondTrust EPM Inspection: Output results to log
@@ -619,6 +653,7 @@ else
         logComment "Policy Checksum Validation: ${checksumValidation}"
     fi
     info "Processes: ${processCheckResult}"
+    info "PMC-related Keychain entries: ${pmcKeychainResult}"
     info "PMfM Status: $( pmfm status )"
     info "pmfmdiag: $( pmfmdiag all )"
     info "sudo.conf Check: $( ls -lah /etc/sudo.conf )"
